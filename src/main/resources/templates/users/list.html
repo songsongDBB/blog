@@ -4,11 +4,13 @@
 
 	<div class="input-group col-md-7 col-xl-6">
 
+		<!-- 搜索框 -->
 		<input type="text" class="form-control" id="searchName"
 			placeholder="输入用户名称进行搜索"> <span class="input-group-btn">
 			<button class="btn btn-secondary" type="button" id="searchNameBtn">
 				<i class="fa fa-search" aria-hidden="true"></i>
 			</button>
+		<!-- 添加用户按钮 -->
 		</span> <a class="btn btn-primary" data-toggle="modal"
 			data-target="#flipFlop" role="button" id="addUser"><i
 			class="fa fa-plus" aria-hidden="true"></i></a>
@@ -17,6 +19,7 @@
 </div>
 
 <div id="mainContainer" class="container">
+	<!-- mainContainerRepleace这个div当从这里查询时，会发ajax请求，返回的页面直接覆盖这个div的内容  -->
 	<div id="mainContainerRepleace" class="row">
 		<table class="table table-striped">
 			<thead>
@@ -44,7 +47,7 @@
 								data-target="#flipFlop" role="button"
 								data-th-attr="userId=${user.id}"> <i
 								class="fa fa-pencil-square-o" aria-hidden="true"></i>
-							</a> <a class="blog-delete-user" role="button"
+							</a> <a class="blog-delete-user"  role="button"
 								data-th-attr="userId=${user.id}"> <i class="fa fa-times"
 								aria-hidden="true"></i>
 							</a>

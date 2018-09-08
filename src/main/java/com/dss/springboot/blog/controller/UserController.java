@@ -111,7 +111,12 @@ public class UserController {
 		return ResponseEntity.ok().body(new Response(false, "处理成功"));
 	}
 
-	
+	/**
+	 * 通过userid获取用户信息，用于修改用户
+	 * @param id
+	 * @param model
+	 * @return
+	 */
 	@GetMapping(value = "edit/{id}")
 	public ModelAndView modifyForm(@PathVariable("id") Long id, Model model) {
 		User user = userService.getUserById(id);
