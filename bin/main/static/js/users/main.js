@@ -5,6 +5,7 @@ $(function() {
 	
 	// 根据用户名、页面索引、页面大小获取用户列表
 	function getUersByName(pageIndex, pageSize) {
+		 
 		 $.ajax({ 
 			 url: "/users", 
 			 contentType : 'application/json',
@@ -86,18 +87,14 @@ $(function() {
 	// 删除用户
 	$("#rightContainer").on("click",".blog-delete-user", function () { 
 		
-		alert("come");
-		
 		// 获取 CSRF Token 
-		//var csrfToken = $("meta[name='_csrf']").attr("content");
-		//var csrfHeader = $("meta[name='_csrf_header']").attr("content");
-		
-		alert("come");
+		var csrfToken = $("meta[name='_csrf']").attr("content");
+		var csrfHeader = $("meta[name='_csrf_header']").attr("content");
 		
 		$.ajax({ 
 			 url: "/users/" + $(this).attr("userId") , 
 			 type: 'DELETE', 
-//			 beforeSend: function(request) {
+//			 beforeSend: function(request) {			//不知道啥意思，已加就报错
 //                 request.setRequestHeader(csrfHeader, csrfToken); // 添加  CSRF Token 
 //             },
 			 success: function(data){

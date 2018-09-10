@@ -108,7 +108,7 @@ public class UserController {
 			return ResponseEntity.ok().body(new Response(false, e.getMessage()));
 		}
 
-		return ResponseEntity.ok().body(new Response(false, "处理成功"));
+		return ResponseEntity.ok().body(new Response(true, "处理成功"));
 	}
 
 	/**
@@ -122,6 +122,23 @@ public class UserController {
 		User user = userService.getUserById(id);
 		model.addAttribute("user", user);
 		return new ModelAndView("users/edit", "userModel", model);
+	}
+	
+	/**
+	 * 注册用户
+	 * @param user
+	 * @return
+	 */
+	@PostMapping("/register")
+	public ResponseEntity<Response> registerUser(User user) {
+		
+		try {
+			userService.saveOrUpdateUser(user);
+		} catch (ConstraintViolationException e) {
+			return ResponseEntity.ok().body(new Response(false, ConstraintViolationExceptionHandler.getMessage(e)));
+		}
+		
+		return ResponseEntity.ok().body(new Response(true, "处理成功", user));
 	}
 
 }

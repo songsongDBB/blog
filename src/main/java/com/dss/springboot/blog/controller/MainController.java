@@ -83,10 +83,10 @@ public class MainController {
 	 * @param user
 	 * @return
 	 */
-	@PostMapping("/register")
+	/*@PostMapping("/register")
 	public String registerUser(User user) {
 		userService.registerUser(user);
-		return "redirect:/index";
-	}
+		return "redirect:/login";
+	}*/
 	
 }
