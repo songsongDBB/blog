@@ -64,7 +64,7 @@ dependencies {
 	//添加Spring Security的依赖
 	compile('org.springframework.boot:spring-boot-starter-security')
 	
-	//添加 Thymeleaf Spring Security的依赖
+	//添加 Thymeleaf Spring Security的依赖，使用这个后，form表单提交时会自带scrf token
 	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4:3.0.2.RELEASE')
 	
 	//添加 H2 的依赖，表示在项目中内嵌一个H2的数据库，用于运行时测试

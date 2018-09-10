@@ -6,6 +6,11 @@
 
 	<link rel="icon" type="image/x-icon" href="favicon.ico">
 
+	<!-- CSRF -->
+	<meta name="_csrf" th:content="${_csrf.token}"/>
+	<!-- default header name is X-CSRF-TOKEN -->
+	<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
     <!-- Tether core CSS -->
     <link href="../../css/tether.min.css" th:href="@{/css/tether.min.css}" rel="stylesheet">
 
@@ -58,14 +63,30 @@
                 </li>
                 <form class="form-inline mt-2 mt-md-0">
                     <input class="form-control mr-sm-2" type="text" placeholder="搜索">
-                    <a href="/search?q=ww" class="btn btn-outline-secondary my-2 my-sm-0"><i class="fa fa-search"
-                                                                                                                                        aria-hidden="true"></i></a>
+                    <a href="/search?q=ww" class="btn btn-outline-secondary my-2 my-sm-0"><i class="fa fa-search" aria-hidden="true"></i></a>
                 </form>
-
             </ul>
 
-            <a href="/login" class="btn btn-outline-success my-2 my-sm-0" type="submit">登录</a>
-            <a href="/register" class="btn btn-outline-success my-2 my-sm-0" type="submit">注册</a>
+			<!-- 当用户登录之后，会存入认证信息，因此这里不应该显示 登录和注册 两个按钮 -->
+            <div sec:authorize="isAuthenticated()"  class="row" >
+				<div class="dropdown">
+					<a class=" dropdown-toggle" href="/u/waylau" th:href="@{'/u/' + ${#authentication.name}}" data-toggle="dropdown"><span sec:authentication="name"></span></a>
+					<div class="dropdown-menu" >
+						<a class=" dropdown-item" href="/u/waylau" th:href="@{'/u/' + ${#authentication.name}}">个人主页</a> 
+						<a class="dropdown-item" href="/u/waylau/profile" th:href="@{'/u/' + ${#authentication.name}} + '/profile'" >个人设置</a>
+					</div>
+				</div>
+				<form action="/logout" th:action="@{/logout}" method="post">
+					<input class="btn btn-outline-success " type="submit" value="退出">
+				</form>
+            </div>
+ 
+			<!-- 用户未登录或者退出登录之后，认证信息也被清除 -->
+            <div sec:authorize="isAnonymous()">
+                <a href="/login" class="btn btn-outline-success my-2 my-sm-0" type="submit">登录</a>
+                <a href="/register" class="btn btn-outline-success my-2 my-sm-0" type="submit">注册</a>
+            </div>
+
         </div>
 
     </div>
