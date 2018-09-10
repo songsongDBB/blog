@@ -1,5 +1,6 @@
 package com.dss.springboot.blog.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.validation.ConstraintViolationException;
@@ -19,8 +20,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.dss.springboot.blog.domain.Authority;
 import com.dss.springboot.blog.domain.User;
+import com.dss.springboot.blog.service.AuthorityService;
 import com.dss.springboot.blog.service.UserService;
+import com.dss.springboot.blog.utils.Const;
 import com.dss.springboot.blog.utils.ConstraintViolationExceptionHandler;
 import com.dss.springboot.blog.vo.Response;
 
@@ -34,6 +38,8 @@ public class UserController {
 
 	@Autowired 
 	private UserService userService;
+	@Autowired
+	private AuthorityService authorityService;
 
 	/**
 	 * 查询所有的用户
@@ -82,9 +88,17 @@ public class UserController {
 	 * @return
 	 */
 	@PostMapping
-	public ResponseEntity<Response> saveOrUpdateUser(User user){
+	public ResponseEntity<Response> saveOrUpdateUser(User user, Long authorityId){
 		
 		try {
+			
+			/**
+			 * 这里是后台在增加用户的时候，会选择用户的角色
+			 */
+			List<Authority> authorities = new ArrayList<Authority>();
+			authorities.add(authorityService.getAuthorityById(authorityId));
+			user.setAuthorities(authorities);
+		
 			userService.saveOrUpdateUser(user);
 		} catch (ConstraintViolationException e) {
 			return ResponseEntity.ok().body(new Response(false, ConstraintViolationExceptionHandler.getMessage(e)));
@@ -133,6 +147,14 @@ public class UserController {
 	public ResponseEntity<Response> registerUser(User user) {
 		
 		try {
+			
+			/**
+			 * 前台注册用户的时候，默认注册的只能是博主
+			 */
+			List<Authority> authorities = new ArrayList<Authority>();
+			authorities.add(authorityService.getAuthorityById(Const.ROLE_USER_AUTHORITY_ID));
+			user.setAuthorities(authorities);
+			
 			userService.saveOrUpdateUser(user);
 		} catch (ConstraintViolationException e) {
 			return ResponseEntity.ok().body(new Response(false, ConstraintViolationExceptionHandler.getMessage(e)));

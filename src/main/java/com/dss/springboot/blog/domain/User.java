@@ -1,15 +1,26 @@
 package com.dss.springboot.blog.domain;
 
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
+import javax.persistence.JoinColumn;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 
 
@@ -20,7 +31,7 @@ import javax.validation.constraints.Size;
  *
  */
 @Entity // 实体
-public class User implements Serializable {
+public class User implements UserDetails {			// security用户权限要求必须实现UserDetails接口
 
 	private static final long serialVersionUID = 1L;
 
@@ -53,6 +64,14 @@ public class User implements Serializable {
 	@Column(length = 200)
 	private String avatar; // 用户头像信息
 
+	/**
+	 * 定义一个权限list，因为用户和权限角色是多对多的关系型
+	 * 这里是表示在项目启动时，要建立一个user和authority的中间表，表名是user_authority，列名user_id对应user表中的id，并且有外键，列名authority_id对应authority表中的id，并且有外键
+	 */
+	@ManyToMany(cascade = CascadeType.DETACH, fetch = FetchType.EAGER)
+	@JoinTable(name = "user_authority", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "authority_id", referencedColumnName = "id"))
+	private List<Authority> authorities;
+	
 	protected User() { // JPA 的规范要求无参构造函数；设为 protected 防止直接使用
 	}
 
@@ -118,6 +137,54 @@ public class User implements Serializable {
 	public String toString() {
 		return "User [id=" + id + ", name=" + name + ", email=" + email + ", username=" + username + ", password="
 				+ password + ", avatar=" + avatar + "]";
+	}
+
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		
+		//  需将 List<Authority> 转成 List<SimpleGrantedAuthority>，否则前端拿不到角色列表名称
+		List<SimpleGrantedAuthority> simpleAuthorities = new ArrayList<>();
+		for(GrantedAuthority authority : this.authorities){
+			simpleAuthorities.add(new SimpleGrantedAuthority(authority.getAuthority()));
+		}
+		
+		return simpleAuthorities;
+	}
+	
+	public void setAuthorities(List<Authority> authorities) {
+		this.authorities = authorities;
+	}
+
+	/**
+	 * 这个方法设置返回值为true
+	 */
+	@Override
+	public boolean isAccountNonExpired() {
+		return true;
+	}
+
+	/**
+	 * 这个方法设置返回值为true
+	 */
+	@Override
+	public boolean isAccountNonLocked() {
+		return true;
+	}
+
+	/**
+	 * 这个方法设置返回值为true
+	 */
+	@Override
+	public boolean isCredentialsNonExpired() {
+		return true;
+	}
+
+	/**
+	 * 这个方法设置返回值为true
+	 */
+	@Override
+	public boolean isEnabled() {
+		return true;
 	}
 
 }
