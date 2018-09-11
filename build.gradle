@@ -67,6 +67,9 @@ dependencies {
 	//添加 Thymeleaf Spring Security的依赖，使用这个后，form表单提交时会自带scrf token
 	compile('org.thymeleaf.extras:thymeleaf-extras-springsecurity4:3.0.2.RELEASE')
 	
+	//添加Markdown parser的依赖，这个依赖是用于编辑博客时的文本编辑器
+	compile('es.nitaur.markdown:txtmark:0.16')
+	
 	//添加 H2 的依赖，表示在项目中内嵌一个H2的数据库，用于运行时测试
 	runtime('com.h2database:h2:1.4.193')
 }

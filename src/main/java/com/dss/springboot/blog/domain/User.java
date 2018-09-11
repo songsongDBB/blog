@@ -21,6 +21,8 @@ import javax.persistence.JoinColumn;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 
 
@@ -123,6 +125,12 @@ public class User implements UserDetails {			// security用户权限要求必须
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+	
+	public void setEncodePassword(String password) {
+		PasswordEncoder encoder = new BCryptPasswordEncoder();
+		String encoderPasswd = encoder.encode(password);
+		this.password = encoderPasswd;
 	}
 
 	public String getAvatar() {
