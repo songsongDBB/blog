@@ -74,6 +74,8 @@ $(function() {
 						
 						 if (data.success) {
 							
+							 toastr.success(data.message);
+							 
 							// 成功后，置换头像图片
 							 $(".blog-avatar").attr("src", data.body);
 						 } else {

@@ -2,6 +2,11 @@ package com.dss.springboot.blog.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,7 +22,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.dss.springboot.blog.domain.Blog;
 import com.dss.springboot.blog.domain.User;
+import com.dss.springboot.blog.service.BlogService;
 import com.dss.springboot.blog.service.UserService;
 import com.dss.springboot.blog.vo.Response;
 
@@ -35,6 +42,8 @@ public class UserspaceController {
 	@Autowired
 	private UserDetailsService userDetailsService;
 	
+	private BlogService blogService;
+	
 	@Value("${file.service.url}") 		//这个表示从配置文件中读取file.service.url的值
 	private String fileServerUrl;
 	
@@ -44,9 +53,12 @@ public class UserspaceController {
 	 * @return
 	 */
 	@GetMapping("/{username}")
-	public String userSpace(@PathVariable("username") String username) {
-		System.out.println("username: " + username);
-		return "/userspace/u";
+	public String userSpace(@PathVariable("username") String username, Model model) {
+		
+		//使用security中的接口获取已认证的用户user信息
+		User user = (User)userDetailsService.loadUserByUsername(username);
+		model.addAttribute("user", user);
+		return "redirect:/u/" + username + "/blogs";
 	}
 	
 	/**
@@ -135,35 +147,48 @@ public class UserspaceController {
 		
 		userService.saveOrUpdateUser(originalUser);
 		
-		return ResponseEntity.ok().body(new Response(true, "处理成功", avatarUrl));
+		return ResponseEntity.ok().body(new Response(true, "上传成功", avatarUrl));
 
 	}
 	
 	/**
-	 * 查询用户的blog信息
-	 * @param username		用户名
-	 * order 排序规则
-	 * category blog类别
-	 * keyword 关键字
+	 * 获取登录用户的博客列表，也就是个人主页页面
+	 * @param username
+	 * @param order		排序方式 默认值是按最新排序
+	 * @param catalogId		类别
+	 * @param keyword	关键字
+	 * @param async		是否异步请求
+	 * @param pageIndex
+	 * @param pageSize
 	 * @return
 	 */
+	@GetMapping("/{username}/blogs")
+	@PreAuthorize("authentication.name.equals(#username)") 
 	public String listBlogsByOrder(@PathVariable("username") String username,
 			@RequestParam(value="order", required=false, defaultValue="new") String order,
-			@RequestParam(value="category", required=false) Long category,
-			@RequestParam(value="keyword", required=false) String keyword) {
+			@RequestParam(value="catalog", required=false) Long catalogId,
+			@RequestParam(value="keyword", required=false, defaultValue="") String keyword,
+			@RequestParam(value="async", required=false) boolean async,
+			@RequestParam(value="pageIndex", required=false, defaultValue="0") int pageIndex,
+			@RequestParam(value="pageSize", required=false, defaultValue="10") int pageSize) {
 		
-		if(category != null) {
-			
-			System.out.print("category:" +category );
-			System.out.print("selflink:" + "redirect:/u/"+ username +"/blogs?category="+category);
-			return "/userspace/u";
 		
-		}else if(keyword != null && keyword.isEmpty() == false) {
+		//使用security中的接口获取已认证的用户user信息
+		User user = (User) userDetailsService.loadUserByUsername(username);
+		
+		Page<Blog> page = null;
+		
+		if(catalogId != null && catalogId > 0) {
+			// TODO 分类查询
+		}else if("hot".equals(order)) {			//按最热排序，最热也就是访问量最多
+
+			Sort sort = new Sort(Direction.DESC, "reading", "comments", "likes");
+			Pageable pageable = new PageRequest(pageIndex, pageSize, sort);
+			page = blogService.listBlogsByTitleVoteAndSort(user, keyword, pageable);
 			
-			System.out.print("keyword:" +keyword );
-			System.out.print("selflink:" + "redirect:/u/"+ username +"/blogs?keyword="+keyword);
-			return "/u";
-			
+		}else if("new".equals(order)) {
+			Pageable pageable = new PageRequest(pageIndex, pageSize);
+			page = blogService.listBlogsByTitleVote(user, keyword, pageable);
 		}
 		
 		System.out.print("order:" +order);
