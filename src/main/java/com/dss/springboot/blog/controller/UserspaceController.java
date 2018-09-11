@@ -1,5 +1,9 @@
 package com.dss.springboot.blog.controller;
 
+import java.util.List;
+
+import javax.validation.ConstraintViolationException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -9,11 +13,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +32,7 @@ import com.dss.springboot.blog.domain.Blog;
 import com.dss.springboot.blog.domain.User;
 import com.dss.springboot.blog.service.BlogService;
 import com.dss.springboot.blog.service.UserService;
+import com.dss.springboot.blog.utils.ConstraintViolationExceptionHandler;
 import com.dss.springboot.blog.vo.Response;
 
 /**
@@ -42,6 +49,7 @@ public class UserspaceController {
 	@Autowired
 	private UserDetailsService userDetailsService;
 	
+	@Autowired
 	private BlogService blogService;
 	
 	@Value("${file.service.url}") 		//这个表示从配置文件中读取file.service.url的值
@@ -170,7 +178,8 @@ public class UserspaceController {
 			@RequestParam(value="keyword", required=false, defaultValue="") String keyword,
 			@RequestParam(value="async", required=false) boolean async,
 			@RequestParam(value="pageIndex", required=false, defaultValue="0") int pageIndex,
-			@RequestParam(value="pageSize", required=false, defaultValue="10") int pageSize) {
+			@RequestParam(value="pageSize", required=false, defaultValue="10") int pageSize,
+			Model model) {
 		
 		
 		//使用security中的接口获取已认证的用户user信息
@@ -180,9 +189,9 @@ public class UserspaceController {
 		
 		if(catalogId != null && catalogId > 0) {
 			// TODO 分类查询
-		}else if("hot".equals(order)) {			//按最热排序，最热也就是访问量最多
+		}else if("hot".equals(order)) {			//按最热排序，最热也就是访问量最多，评论量，点赞量来排序
 
-			Sort sort = new Sort(Direction.DESC, "reading", "comments", "likes");
+			Sort sort = new Sort(Direction.DESC, "readSize", "commentSize", "voteSize");
 			Pageable pageable = new PageRequest(pageIndex, pageSize, sort);
 			page = blogService.listBlogsByTitleVoteAndSort(user, keyword, pageable);
 			
@@ -191,9 +200,15 @@ public class UserspaceController {
 			page = blogService.listBlogsByTitleVote(user, keyword, pageable);
 		}
 		
-		System.out.print("order:" +order);
-		System.out.print("selflink:" + "redirect:/u/"+ username +"/blogs?order="+order);
-		return "/u";
+		List<Blog> list = page.getContent();
+		model.addAttribute("user", user);
+		model.addAttribute("order", order);
+		model.addAttribute("catalogId", catalogId);
+		model.addAttribute("keyword", keyword);
+		model.addAttribute("page", page);
+		model.addAttribute("blogList", list);
+		
+		return (async == true ? "/userspace/u :: #mainContainerReplace" : "/userspace/u");
 	}
 	
 	/**
@@ -202,19 +217,109 @@ public class UserspaceController {
 	 * @return
 	 */
 	@GetMapping("/{username}/blogs/{id}")
-	public String listBlogsByOrder(@PathVariable("id") Long id) {
-		 
-		System.out.print("blogId:" + id);
+	public String listBlogsByOrder(@PathVariable("username") String username, @PathVariable("id") Long id, Model model) {
+		
+		User principal = null;
+		Blog blog = blogService.getBlogById(id);	//获取这个blog	
+		
+		blogService.readingIncrease(id);		//blog访问量加1
+		
+		//判断操作用户是否为这个blog的所有者，这里使用的是Security
+		boolean isBlogOwner = false;
+		//这里就是获取当前登录的用户
+		if(SecurityContextHolder.getContext().getAuthentication() != null && SecurityContextHolder.getContext().getAuthentication().isAuthenticated()
+				&& !SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString().equals("anonymousUser")) {
+			principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+			if(principal != null  && username.equals(principal.getUsername())) {
+				isBlogOwner = true;
+			}
+		}
+		
+		model.addAttribute("isBlogOwner", isBlogOwner);		//如果是当前登录用户的blog，则允许在页面出现修改按钮
+		model.addAttribute("blogModel", blog);
+	
 		return "/userspace/blog";
 	}
 	
 	/**
-	 * 修改用户blog
+	 *获取新增blog的页面
 	 * @return
 	 */
 	@GetMapping("/{username}/blogs/edit")
-	public String editBlog() {
+	public ModelAndView createBolg(@PathVariable("username") String username, Model model) {
  
-		return "/userspace/blogedit";
+		model.addAttribute("blog", new Blog(null, null, null));
+		model.addAttribute("fileServerUrl", fileServerUrl);
+		
+		return new ModelAndView("/userspace/blogedit", "blogModel", model);
+	}
+	
+	/**
+	 * 获取编辑blog的界面，需要传入blog id
+	 * @param username
+	 * @param model
+	 * @return
+	 */
+	@GetMapping("/{username}/blogs/edit/{id}")
+	@PreAuthorize("authentication.name.equals(#username)") 
+	public ModelAndView createBolg(@PathVariable("username") String username, @PathVariable("id") Long id, Model model) {
+ 
+		model.addAttribute("blog", blogService.getBlogById(id));
+		model.addAttribute("fileServerUrl", fileServerUrl);
+		
+		return new ModelAndView("/userspace/blogedit", "blogModel", model);
+	}
+	
+	@PostMapping("/{username}/blogs/edit")
+	@PreAuthorize("authentication.name.equals(#username)") 
+	public ResponseEntity<Response> saveBlog(@PathVariable("username") String username, @RequestBody Blog blog){
+		
+		try {
+			
+			//判断是修改还是新增
+			if(blog.getId() != null) {
+				//修改
+				Blog orinalBlog = blogService.getBlogById(blog.getId());
+				orinalBlog.setTitle(blog.getTitle());
+				orinalBlog.setContent(blog.getContent());
+				orinalBlog.setSummary(blog.getSummary());
+				
+				blogService.saveBlog(orinalBlog);
+			}else {
+				//新增
+				//使用security中的接口获取已认证的用户user信息
+				User user = (User) userDetailsService.loadUserByUsername(username);
+				blog.setUser(user);
+				
+				blogService.saveBlog(blog);
+			}
+		} catch (ConstraintViolationException e) {
+			return ResponseEntity.ok().body(new Response(false, ConstraintViolationExceptionHandler.getMessage(e)));
+		} catch (Exception e) {
+			return ResponseEntity.ok().body(new Response(false, e.getMessage()));
+		}
+		
+		String redirectUrl = "/u/" + username + "/blogs/" + blog.getId();
+		return ResponseEntity.ok().body(new Response(true, "操作成功", redirectUrl));
+	}
+	
+	/**
+	 * 删除blog
+	 * @param username
+	 * @param id
+	 * @return
+	 */
+	@DeleteMapping("/{username}/blogs/{id}")
+	@PreAuthorize("authentication.name.equals(#username)") 
+	public ResponseEntity<Response> deleteBlog(@PathVariable("username") String username, @PathVariable("id") Long id){
+	
+		try {
+			blogService.removeBlog(id);
+		} catch (Exception e) {
+			return ResponseEntity.ok().body(new Response(false, e.getMessage()));
+		}
+		
+		String redirectUrl = "/u/" + username + "/blogs";
+		return ResponseEntity.ok().body(new Response(true, "操作成功", redirectUrl));
 	}
 }

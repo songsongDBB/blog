@@ -45,7 +45,7 @@ public class BlogServiceImpl implements BlogService {
 	public Page<Blog> listBlogsByTitleVote(User user, String title, Pageable pageable) {
 
 		title = "%" + title + "%";
-		Page<Blog> blogs = blogRepository.findByTitleLikeAndUserOrTagsLikeAndUserOrderByCreateTimeDesc(user, title, pageable);
+		Page<Blog> blogs = blogRepository.findByTitleLikeAndUserAndUserOrderByCreateTimeDesc(user, title, pageable);
 		return blogs;
 	}
 
@@ -61,7 +61,7 @@ public class BlogServiceImpl implements BlogService {
 	public void readingIncrease(Long id) {
 		
 		Blog blog = blogRepository.getOne(id);
-		blog.setReading(blog.getReading()+1);
+		blog.setReadSize(blog.getReadSize()+1);
 		this.saveBlog(blog);
 	}
 

@@ -65,14 +65,14 @@ public class Blog implements Serializable {
 	@org.hibernate.annotations.CreationTimestamp // 由数据库自动创建时间
 	private Timestamp createTime;
 
-	@Column(name = "reading")
-	private Long reading = 0L; // 访问量
+	@Column(name = "readSize")
+	private Long readSize = 0L; // 访问量
 
-	@Column(name = "comments")
-	private Long comments = 0L; // 评论量
+	@Column(name = "commentSize")
+	private Long commentSize = 0L; // 评论量
 
-	@Column(name = "likes")
-	private Long likes = 0L; // 点赞量
+	@Column(name = "voteSize")
+	private Long voteSize = 0L; // 点赞量
 
 	protected Blog() {
 
@@ -114,6 +114,11 @@ public class Blog implements Serializable {
 
 	public void setContent(String content) {
 		this.content = content;
+		this.htmlContent = Processor.process(content); // 把content转化成html, 使用compile('es.nitaur.markdown:txtmark:0.16')
+	}
+
+	public User getUser() {
+		return user;
 	}
 
 	public String getHtmlContent() {
@@ -122,10 +127,6 @@ public class Blog implements Serializable {
 
 	public void setHtmlContent(String htmlContent) {
 		this.htmlContent = htmlContent;
-	}
-
-	public User getUser() {
-		return user;
 	}
 
 	public void setUser(User user) {
@@ -140,36 +141,35 @@ public class Blog implements Serializable {
 		this.createTime = createTime;
 	}
 
-	public Long getReading() {
-		return reading;
+	public Long getReadSize() {
+		return readSize;
 	}
 
-	public void setReading(Long reading) {
-		this.reading = reading;
+	public void setReadSize(Long readSize) {
+		this.readSize = readSize;
 	}
 
-	public Long getComments() {
-		return comments;
+	public Long getCommentSize() {
+		return commentSize;
 	}
 
-	public void setComments(Long comments) {
-		this.comments = comments;
-		this.htmlContent = Processor.process(content);			//这个是用 compile('es.nitaur.markdown:txtmark:0.16') 这个组件把内容转成html
+	public void setCommentSize(Long commentSize) {
+		this.commentSize = commentSize;
 	}
 
-	public Long getLikes() {
-		return likes;
+	public Long getVoteSize() {
+		return voteSize;
 	}
 
-	public void setLikes(Long likes) {
-		this.likes = likes;
+	public void setVoteSize(Long voteSize) {
+		this.voteSize = voteSize;
 	}
 
 	@Override
 	public String toString() {
 		return "Blog [id=" + id + ", title=" + title + ", summary=" + summary + ", content=" + content
-				+ ", htmlContent=" + htmlContent + ", user=" + user + ", createTime=" + createTime + ", reading="
-				+ reading + ", comments=" + comments + ", likes=" + likes + "]";
+				+ ", htmlContent=" + htmlContent + ", user=" + user + ", createTime=" + createTime + ", readSize="
+				+ readSize + ", commentSize=" + commentSize + ", voteSize=" + voteSize + "]";
 	}
 
 }
