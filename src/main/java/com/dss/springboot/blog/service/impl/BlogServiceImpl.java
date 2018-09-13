@@ -5,9 +5,11 @@ import javax.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.dss.springboot.blog.domain.Blog;
+import com.dss.springboot.blog.domain.Comment;
 import com.dss.springboot.blog.domain.User;
 import com.dss.springboot.blog.repository.BlogRepository;
 import com.dss.springboot.blog.service.BlogService;
@@ -63,6 +65,26 @@ public class BlogServiceImpl implements BlogService {
 		Blog blog = blogRepository.getOne(id);
 		blog.setReadSize(blog.getReadSize()+1);
 		this.saveBlog(blog);
+	}
+
+	@Override
+	public Blog createComment(Long blogId, String commentContent) {
+		
+		Blog blog = blogRepository.getOne(blogId);			//先找到这个blog
+		User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();			//从Security上下文获取当前认证的user
+		Comment comment = new Comment(user, commentContent);
+		blog.addComment(comment);			//这个评论添加到这个blog中
+		
+		return this.saveBlog(blog);
+	}
+
+	@Override
+	public Blog removeComment(Long blogId, Long commentId) {
+
+		Blog blog = blogRepository.getOne(blogId);			//先找到这个blog
+		blog.removeComment(commentId);
+		
+		return this.saveBlog(blog);
 	}
 
 }

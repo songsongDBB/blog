@@ -69,24 +69,29 @@
                         </div>
                     </div>
                     <button class="btn btn-primary float-right" id="submitComment">发表评论</button>
-
+					<button class="btn btn-primary float-right" th:if="${currentVote} == null" id="submitVote">点赞</button>
+					<button class="btn btn-primary float-right" th:if="${currentVote}" th:attr="voteId=${currentVote.id}" id="cancelVote">取消点赞</button>
                 </div>
+
+
                 <div class="card-block" id="mainContainer">
 
                     <div class="row" id="mainContainerRepleace" th:each="comment,commentStat : ${comments}" th:object="${comment}">
                         <h2 class="card-title col-lg-1 col-md-2">
 							<span>
+								<!-- *{user.username} 这个是表示在comment中有一个user的属性，这里是获取每一个评论的评论人 -->
 			                  <a href="/u/waylau" th:href="'/u/'+ *{user.username}" title="waylau" th:title="*{user.username}">
-			                    <img src="/images/avatar-defualt.jpg" th:src="*{user.avatar} == null ? '/images/avatar-defualt.jpg' : *{user.avatar}" class="blog-avatar-50">
+			                    <img src="/images/avatar-defualt.jpg" th:src="*{user.avatar} == null ? '/images/avatar-defualt.jpg' : *{user.avatar}" class="blog-avatar-50"> <!-- 这里只有这个评论是当前登录用户的，才能看到删除按钮 -->
 			                  </a>
 					        </span>
                         </h2>
                         <div class="card-text col-lg-11 col-md-10">
                             <a href="/u/waylau" th:href="'/u/'+ *{user.username}" class="card-link" th:text="*{user.username}">waylau</a> [[${commentStat.index} + 1]]楼  [[${#dates.format(comment.createTime, 'yyyy-MM-dd HH:mm')}]] 
-                            <a href="javascript:void(0)" class="blog-delete-comment" th:if="${commentOwner} eq *{user.username}" th:attr="commentId=*{id}"><i class="fa fa-trash-o" aria-hidden="true"></i></a>
+                            <a href="javascript:void(0)" class="blog-delete-comment" th:if="${commentgOwner} eq *{user.username}" th:attr="commentId=*{id}"><i class="fa fa-trash-o" aria-hidden="true"></i></a>
                             <p th:text="*{content}">不错哦，顶起！</p>
                         </div>
                     </div>
+
 
                 </div>
             </div>

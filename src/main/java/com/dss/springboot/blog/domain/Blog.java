@@ -2,6 +2,7 @@ package com.dss.springboot.blog.domain;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.List;
 
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
@@ -12,7 +13,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.Lob;
+import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
@@ -73,6 +76,11 @@ public class Blog implements Serializable {
 
 	@Column(name = "voteSize")
 	private Long voteSize = 0L; // 点赞量
+
+	// 这里表示会建立一个中间变，博客和评论的中间表，关系是一对多
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@JoinTable(name = "blog_comment", joinColumns = @JoinColumn(name = "blog_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "comment_id", referencedColumnName = "id"))
+	private List<Comment> comments;
 
 	protected Blog() {
 
@@ -166,11 +174,46 @@ public class Blog implements Serializable {
 		this.voteSize = voteSize;
 	}
 
+	public List<Comment> getComments() {
+		return comments;
+	}
+
+	public void setComments(List<Comment> comments) {
+		this.comments = comments;
+		this.commentSize = (long) this.comments.size();
+	}
+	
+	/**
+	 * 添加评论		这里jpa会自动修改博客评论中间表，并且重新这是评论量
+	 * @param comment
+	 */
+	public void addComment(Comment comment) {
+		this.comments.add(comment);
+		this.commentSize = (long) this.comments.size();
+	}
+
+	/**
+	 * 删除评论		这里jpa会自动修改博客评论中间表，并且重新这是评论量
+	 * @param comment
+	 */
+	public void removeComment(Long commentId) {
+		for (int index=0; index < this.comments.size(); index ++ ) {
+			if (comments.get(index).getId() == commentId) {
+				this.comments.remove(index);
+				break;
+			}
+		}
+		
+		this.commentSize = (long) this.comments.size();
+	}
+
+
+
 	@Override
 	public String toString() {
 		return "Blog [id=" + id + ", title=" + title + ", summary=" + summary + ", content=" + content
 				+ ", htmlContent=" + htmlContent + ", user=" + user + ", createTime=" + createTime + ", readSize="
-				+ readSize + ", commentSize=" + commentSize + ", voteSize=" + voteSize + "]";
+				+ readSize + ", commentSize=" + commentSize + ", voteSize=" + voteSize + ", comments=" + comments + "]";
 	}
 
 }

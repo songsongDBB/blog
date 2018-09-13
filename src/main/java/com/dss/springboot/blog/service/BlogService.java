@@ -62,5 +62,19 @@ public interface BlogService {
 	 * @param id
 	 */
 	void readingIncrease(Long id);
+	
+	/**
+	 * 发表评论，返回这个blog的内容，这里面就包括所有的评论
+	 * @param blogId
+	 * @param commentContent
+	 * @return
+	 */
+	Blog createComment(Long blogId, String commentContent);
 
+	/**
+	 * 删除一个博客的某一条评论
+	 * @param blogId
+	 * @param commentId
+	 */
+	Blog removeComment(Long blogId, Long commentId);
 }
