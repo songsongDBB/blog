@@ -98,6 +98,7 @@ public class UserController {
 			List<Authority> authorities = new ArrayList<Authority>();
 			authorities.add(authorityService.getAuthorityById(authorityId));
 			user.setAuthorities(authorities);
+			user.setEncodePassword(user.getPassword()); 		//将密码设置成密文
 		
 			userService.saveOrUpdateUser(user);
 		} catch (ConstraintViolationException e) {
@@ -154,6 +155,7 @@ public class UserController {
 			List<Authority> authorities = new ArrayList<Authority>();
 			authorities.add(authorityService.getAuthorityById(Const.ROLE_USER_AUTHORITY_ID));
 			user.setAuthorities(authorities);
+			user.setEncodePassword(user.getPassword()); 		//将密码设置成密文
 			
 			userService.saveOrUpdateUser(user);
 		} catch (ConstraintViolationException e) {

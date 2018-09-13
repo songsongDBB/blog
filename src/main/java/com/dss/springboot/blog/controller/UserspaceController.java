@@ -56,7 +56,7 @@ public class UserspaceController {
 	private String fileServerUrl;
 	
 	/**
-	 * 通过用户名访问用户个人主页
+	 * 通过用户名访问用户个人主页，在header中点击个人中心，来到这里
 	 * @param username
 	 * @return
 	 */
@@ -66,7 +66,7 @@ public class UserspaceController {
 		//使用security中的接口获取已认证的用户user信息
 		User user = (User)userDetailsService.loadUserByUsername(username);
 		model.addAttribute("user", user);
-		return "redirect:/u/" + username + "/blogs";
+		return "redirect:/u/" + username + "/blogs";			//这里是重定向到 listBlogsByOrder 这个方法
 	}
 	
 	/**
@@ -208,16 +208,16 @@ public class UserspaceController {
 		model.addAttribute("page", page);
 		model.addAttribute("blogList", list);
 		
-		return (async == true ? "/userspace/u :: #mainContainerReplace" : "/userspace/u");
+		return (async == true ? "/userspace/u :: #mainContainerRepleace" : "/userspace/u");
 	}
 	
 	/**
-	 * 查询用户的blog，通过id查询
+	 * 查询用户的blog，通过id查询，去往显示一个blog详情的页面
 	 * @param id
 	 * @return
 	 */
 	@GetMapping("/{username}/blogs/{id}")
-	public String listBlogsByOrder(@PathVariable("username") String username, @PathVariable("id") Long id, Model model) {
+	public ModelAndView listBlogsByOrder(@PathVariable("username") String username, @PathVariable("id") Long id, Model model) {
 		
 		User principal = null;
 		Blog blog = blogService.getBlogById(id);	//获取这个blog	
@@ -238,7 +238,7 @@ public class UserspaceController {
 		model.addAttribute("isBlogOwner", isBlogOwner);		//如果是当前登录用户的blog，则允许在页面出现修改按钮
 		model.addAttribute("blogModel", blog);
 	
-		return "/userspace/blog";
+		return new ModelAndView("userspace/blog");
 	}
 	
 	/**
@@ -248,7 +248,7 @@ public class UserspaceController {
 	@GetMapping("/{username}/blogs/edit")
 	public ModelAndView createBolg(@PathVariable("username") String username, Model model) {
  
-		model.addAttribute("blog", new Blog(null, null, null));
+		model.addAttribute("blog", new Blog(null, null, null, null));
 		model.addAttribute("fileServerUrl", fileServerUrl);
 		
 		return new ModelAndView("/userspace/blogedit", "blogModel", model);
@@ -277,21 +277,21 @@ public class UserspaceController {
 		try {
 			
 			//判断是修改还是新增
-			if(blog.getId() != null) {
+			if(blog.getId() != null && blog.getId() != 0) {
 				//修改
 				Blog orinalBlog = blogService.getBlogById(blog.getId());
 				orinalBlog.setTitle(blog.getTitle());
 				orinalBlog.setContent(blog.getContent());
 				orinalBlog.setSummary(blog.getSummary());
 				
-				blogService.saveBlog(orinalBlog);
+				blog = blogService.saveBlog(orinalBlog);
 			}else {
 				//新增
 				//使用security中的接口获取已认证的用户user信息
 				User user = (User) userDetailsService.loadUserByUsername(username);
 				blog.setUser(user);
 				
-				blogService.saveBlog(blog);
+				blog = blogService.saveBlog(blog);
 			}
 		} catch (ConstraintViolationException e) {
 			return ResponseEntity.ok().body(new Response(false, ConstraintViolationExceptionHandler.getMessage(e)));
