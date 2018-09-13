@@ -30,6 +30,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.dss.springboot.blog.domain.Blog;
 import com.dss.springboot.blog.domain.User;
+import com.dss.springboot.blog.domain.Vote;
 import com.dss.springboot.blog.service.BlogService;
 import com.dss.springboot.blog.service.UserService;
 import com.dss.springboot.blog.utils.ConstraintViolationExceptionHandler;
@@ -235,8 +236,25 @@ public class UserspaceController {
 			}
 		}
 		
+		/**
+		 * 看当前登录的用户，是否对这个blog进行过点赞操作
+		 */
+		List<Vote> votes = blog.getVotes();			//看这个blog的所有点赞信息
+		Vote currentVote = null;
+		
+		if(principal != null) {
+			//如果点过赞了，就在前台显示取消点赞按钮，反之就显示点赞按钮
+			for(Vote vote : votes) {
+				if(vote.getUser().getUsername().equals(principal.getUsername())) {
+					currentVote = vote;
+					break;
+				}
+			}
+		}
+		
 		model.addAttribute("isBlogOwner", isBlogOwner);		//如果是当前登录用户的blog，则允许在页面出现修改按钮
 		model.addAttribute("blogModel", blog);
+		model.addAttribute("currentVote", currentVote);
 	
 		return new ModelAndView("userspace/blog");
 	}

@@ -81,6 +81,11 @@ public class Blog implements Serializable {
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@JoinTable(name = "blog_comment", joinColumns = @JoinColumn(name = "blog_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "comment_id", referencedColumnName = "id"))
 	private List<Comment> comments;
+	
+	// 这里表示会建立一个中间变，博客和点赞的中间表，关系是一对多
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinTable(name = "blog_vote", joinColumns = @JoinColumn(name = "blog_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "vote_id", referencedColumnName = "id"))
+	private List<Vote> votes;
 
 	protected Blog() {
 
@@ -207,13 +212,52 @@ public class Blog implements Serializable {
 		this.commentSize = (long) this.comments.size();
 	}
 
+	public List<Vote> getVotes() {
+		return votes;
+	}
+	
+	//意思同评论量
+	public void setVotes(List<Vote> votes) {
+		this.votes = votes;
+		this.voteSize = (long) this.votes.size();
+	}
+	
+	/**
+	 * 点赞
+	 * @param vote
+	 * @return
+	 */
+	public boolean addVote(Vote vote) {
+		boolean isExist = false;
+		
+		// 判断当前点赞的这个user是否对这个博客进行过点赞操作了
+		for (int index=0; index < this.votes.size(); index ++ ) {
+			if (this.votes.get(index).getUser().getId() == vote.getUser().getId()) {
+				isExist = true;
+				break;
+			}
+		}
+		
+		if (!isExist) {
+			this.votes.add(vote);			//这里add之后，jpa会往blog_vote插入一条数据
+			this.voteSize = (long) this.votes.size();
+		}
 
-
-	@Override
-	public String toString() {
-		return "Blog [id=" + id + ", title=" + title + ", summary=" + summary + ", content=" + content
-				+ ", htmlContent=" + htmlContent + ", user=" + user + ", createTime=" + createTime + ", readSize="
-				+ readSize + ", commentSize=" + commentSize + ", voteSize=" + voteSize + ", comments=" + comments + "]";
+		return isExist;
+	}
+	
+	/**
+	 * 取消点赞
+	 * @param voteId
+	 */
+	public void removeVote(Long voteId) {
+		for (int index=0; index < this.votes.size(); index ++ ) {
+			if (this.votes.get(index).getId() == voteId) {
+				this.votes.remove(index);		//这里remove之后，jpa会在blog_vote删除voteId的这个记录
+				break;
+			}
+		}
+		this.voteSize = (long) this.votes.size();
 	}
 
 }

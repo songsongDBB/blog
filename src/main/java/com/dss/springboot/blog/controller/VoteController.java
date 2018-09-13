@@ -22,6 +22,7 @@ import com.dss.springboot.blog.domain.Comment;
 import com.dss.springboot.blog.domain.User;
 import com.dss.springboot.blog.service.BlogService;
 import com.dss.springboot.blog.service.CommentService;
+import com.dss.springboot.blog.service.VoteService;
 import com.dss.springboot.blog.utils.ConstraintViolationExceptionHandler;
 import com.dss.springboot.blog.vo.Response;
 
@@ -30,80 +31,51 @@ import com.dss.springboot.blog.vo.Response;
  * @author duan ss
  */
 @Controller
-@RequestMapping("/comments")
-public class CommentController {
+@RequestMapping("/votes")
+public class VoteController {
 
 	@Autowired
 	private BlogService blogService;
 	
 	@Autowired
-	private CommentService commentService;
+	private VoteService voteService;
+	
 	
 	/**
-	 * 通过blog的id获取这个blog的所有评论
+	 * 发表点赞
 	 * @param blogId
-	 * @param model
-	 * @return
-	 */
-	@GetMapping
-	public String listCommentsByBlogId(@RequestParam(value="blogId", required=true) Long blogId, Model model) {
-		
-		Blog blog = blogService.getBlogById(blogId);
-		List<Comment> comments = blog.getComments();
-		
-		//得到当前用户的username
-		String commentgOwner = "";
-		//这里就是获取当前登录的用户
-		if(SecurityContextHolder.getContext().getAuthentication() != null && SecurityContextHolder.getContext().getAuthentication().isAuthenticated()
-				&& !SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString().equals("anonymousUser")) {
-			User principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-			if(principal != null ) {
-				commentgOwner = principal.getUsername();
-			}
-		}
-		
-		model.addAttribute("commentgOwner", commentgOwner);
-		model.addAttribute("comments", comments);
-		
-		return "/userspace/blog :: #mainContainerRepleace";
-	}
-	
-	/**
-	 * 发表评论
-	 * @param blogId
-	 * @param commentContent
 	 * @return
 	 */
 	@PostMapping
-	@PreAuthorize("hasAnyAuthority('ROLE_管理员','ROLE_博主')") 			//要求用户必须分配了角色才能发表评论
-	public ResponseEntity<Response> createComment(Long blogId, String commentContent){
+	@PreAuthorize("hasAnyAuthority('ROLE_管理员','ROLE_博主')") 			//要求用户必须分配了角色才能点赞
+	public ResponseEntity<Response> createVote(Long blogId){
 		
 		try {
-			blogService.createComment(blogId, commentContent);
+			blogService.createVote(blogId);
 		} catch (ConstraintViolationException e) {
 			return ResponseEntity.ok().body(new Response(false, ConstraintViolationExceptionHandler.getMessage(e)));
 		} catch (Exception e) {
 			return ResponseEntity.ok().body(new Response(false, e.getMessage()));
 		}
 		
-		return ResponseEntity.ok().body(new Response(true, "操作成功", null));
+		return ResponseEntity.ok().body(new Response(true, "点赞成功", null));
 		
 	}
 	
 	/**
-	 * 删除评论，通过评论id
+	 * 取消点赞
+	 * @param id
 	 * @param blogId
-	 * @param commentContent
 	 * @return
 	 */
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasAnyAuthority('ROLE_管理员','ROLE_博主')") 			//要求用户必须分配了角色才能删除评论
+	@PreAuthorize("hasAnyAuthority('ROLE_管理员','ROLE_博主')") 			//要求用户必须分配了角色才能取消点赞
 	public ResponseEntity<Response> createComment(@PathVariable("id") Long id, Long blogId){
 		
 		boolean isOwner = false;
-		User user = commentService.getCommentById(id).getUser();			//找到这个评论是那个user发布的
+		User user = voteService.getVoteById(id).getUser();			//找到这个点赞是那个user发布的
 		
-		//判断这个操作用户是否这个评论的所有者
+		//判断这个操作用户是否这个点赞的所有者
 		if(SecurityContextHolder.getContext().getAuthentication() != null && SecurityContextHolder.getContext().getAuthentication().isAuthenticated()
 				&& !SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString().equals("anonymousUser")) {
 			User principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -118,8 +90,8 @@ public class CommentController {
 		
 		try {
 			
-			blogService.removeComment(blogId, id);
-			commentService.removeCommentById(id);
+			blogService.removeVote(blogId, id);
+			voteService.removeVoteById(id);
 			
 		} catch (ConstraintViolationException e)  {
 			return ResponseEntity.ok().body(new Response(false, ConstraintViolationExceptionHandler.getMessage(e)));
@@ -127,7 +99,7 @@ public class CommentController {
 			return ResponseEntity.ok().body(new Response(false, e.getMessage()));
 		}
 		
-		return ResponseEntity.ok().body(new Response(true, "操作成功", null));
+		return ResponseEntity.ok().body(new Response(true, "取消点赞成功", null));
 
 		
 	}
