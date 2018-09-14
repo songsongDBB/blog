@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.dss.springboot.blog.domain.Blog;
+import com.dss.springboot.blog.domain.Catalog;
 import com.dss.springboot.blog.domain.User;
 
 /**
@@ -32,5 +33,11 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
 	 */
 	Page<Blog> findByUserAndTitleLike(User user, String title, Pageable pageable);
 
-	
+	/**
+	 * 根据分类查询博客列表
+	 * @param catalog
+	 * @param pageable
+	 * @return
+	 */
+	Page<Blog> findByCatalog(Catalog catalog, Pageable pageable);
 }

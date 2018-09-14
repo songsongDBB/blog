@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.dss.springboot.blog.domain.Blog;
+import com.dss.springboot.blog.domain.Catalog;
 import com.dss.springboot.blog.domain.User;
 
 public interface BlogService {
@@ -92,4 +93,19 @@ public interface BlogService {
 	 * @return
 	 */
 	Blog removeVote(Long blogId, Long voteId);
+	
+	/**
+	 * 根据分类查询博客列表
+	 * @param catalog
+	 * @param pageable
+	 * @return
+	 */
+	Page<Blog> listBlogByCatalog(Catalog catalog, Pageable pageable);
+	
+	/**
+	 * 判断当前catalogId先，这个user有没有博客
+	 * @param catalogId
+	 * @return
+	 */
+	boolean isExsitBlogByCatalogId(Long catalogId, User user);
 }

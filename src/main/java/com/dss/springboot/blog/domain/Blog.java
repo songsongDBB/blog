@@ -81,11 +81,16 @@ public class Blog implements Serializable {
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@JoinTable(name = "blog_comment", joinColumns = @JoinColumn(name = "blog_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "comment_id", referencedColumnName = "id"))
 	private List<Comment> comments;
-	
+
 	// 这里表示会建立一个中间变，博客和点赞的中间表，关系是一对多
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JoinTable(name = "blog_vote", joinColumns = @JoinColumn(name = "blog_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "vote_id", referencedColumnName = "id"))
 	private List<Vote> votes;
+
+	// 这里会在blog表中建立一个catalog_id的字段，外键
+	@OneToOne(cascade = CascadeType.DETACH, fetch = FetchType.LAZY)
+	@JoinColumn(name = "catalog_id")
+	private Catalog catalog;
 
 	protected Blog() {
 
@@ -187,9 +192,10 @@ public class Blog implements Serializable {
 		this.comments = comments;
 		this.commentSize = (long) this.comments.size();
 	}
-	
+
 	/**
-	 * 添加评论		这里jpa会自动修改博客评论中间表，并且重新这是评论量
+	 * 添加评论 这里jpa会自动修改博客评论中间表，并且重新这是评论量
+	 * 
 	 * @param comment
 	 */
 	public void addComment(Comment comment) {
@@ -198,66 +204,85 @@ public class Blog implements Serializable {
 	}
 
 	/**
-	 * 删除评论		这里jpa会自动修改博客评论中间表，并且重新这是评论量
+	 * 删除评论 这里jpa会自动修改博客评论中间表，并且重新这是评论量
+	 * 
 	 * @param comment
 	 */
 	public void removeComment(Long commentId) {
-		for (int index=0; index < this.comments.size(); index ++ ) {
+		for (int index = 0; index < this.comments.size(); index++) {
 			if (comments.get(index).getId() == commentId) {
 				this.comments.remove(index);
 				break;
 			}
 		}
-		
+
 		this.commentSize = (long) this.comments.size();
 	}
 
 	public List<Vote> getVotes() {
 		return votes;
 	}
-	
-	//意思同评论量
+
+	// 意思同评论量
 	public void setVotes(List<Vote> votes) {
 		this.votes = votes;
 		this.voteSize = (long) this.votes.size();
 	}
-	
+
 	/**
 	 * 点赞
+	 * 
 	 * @param vote
 	 * @return
 	 */
 	public boolean addVote(Vote vote) {
 		boolean isExist = false;
-		
+
 		// 判断当前点赞的这个user是否对这个博客进行过点赞操作了
-		for (int index=0; index < this.votes.size(); index ++ ) {
+		for (int index = 0; index < this.votes.size(); index++) {
 			if (this.votes.get(index).getUser().getId() == vote.getUser().getId()) {
 				isExist = true;
 				break;
 			}
 		}
-		
+
 		if (!isExist) {
-			this.votes.add(vote);			//这里add之后，jpa会往blog_vote插入一条数据
+			this.votes.add(vote); // 这里add之后，jpa会往blog_vote插入一条数据
 			this.voteSize = (long) this.votes.size();
 		}
 
 		return isExist;
 	}
-	
+
 	/**
 	 * 取消点赞
+	 * 
 	 * @param voteId
 	 */
 	public void removeVote(Long voteId) {
-		for (int index=0; index < this.votes.size(); index ++ ) {
+		for (int index = 0; index < this.votes.size(); index++) {
 			if (this.votes.get(index).getId() == voteId) {
-				this.votes.remove(index);		//这里remove之后，jpa会在blog_vote删除voteId的这个记录
+				this.votes.remove(index); // 这里remove之后，jpa会在blog_vote删除voteId的这个记录
 				break;
 			}
 		}
 		this.voteSize = (long) this.votes.size();
+	}
+
+	public Catalog getCatalog() {
+		return catalog;
+	}
+
+	public void setCatalog(Catalog catalog) {
+		this.catalog = catalog;
+	}
+
+	@Override
+	public String toString() {
+		return "Blog [id=" + id + ", title=" + title + ", summary=" + summary + ", content=" + content
+				+ ", htmlContent=" + htmlContent + ", user=" + user + ", createTime=" + createTime + ", readSize="
+				+ readSize + ", commentSize=" + commentSize + ", voteSize=" + voteSize + ", comments=" + comments
+				+ ", votes=" + votes + ", catalog=" + catalog + "]";
 	}
 
 }

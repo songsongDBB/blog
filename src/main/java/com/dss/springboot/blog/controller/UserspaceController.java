@@ -29,9 +29,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.dss.springboot.blog.domain.Blog;
+import com.dss.springboot.blog.domain.Catalog;
 import com.dss.springboot.blog.domain.User;
 import com.dss.springboot.blog.domain.Vote;
 import com.dss.springboot.blog.service.BlogService;
+import com.dss.springboot.blog.service.CatalogService;
 import com.dss.springboot.blog.service.UserService;
 import com.dss.springboot.blog.utils.ConstraintViolationExceptionHandler;
 import com.dss.springboot.blog.vo.Response;
@@ -52,6 +54,9 @@ public class UserspaceController {
 	
 	@Autowired
 	private BlogService blogService;
+	
+	@Autowired
+	private CatalogService catalogService;
 	
 	@Value("${file.service.url}") 		//这个表示从配置文件中读取file.service.url的值
 	private String fileServerUrl;
@@ -172,7 +177,6 @@ public class UserspaceController {
 	 * @return
 	 */
 	@GetMapping("/{username}/blogs")
-	@PreAuthorize("authentication.name.equals(#username)") 
 	public String listBlogsByOrder(@PathVariable("username") String username,
 			@RequestParam(value="order", required=false, defaultValue="new") String order,
 			@RequestParam(value="catalog", required=false) Long catalogId,
@@ -189,7 +193,12 @@ public class UserspaceController {
 		Page<Blog> page = null;
 		
 		if(catalogId != null && catalogId > 0) {
-			// TODO 分类查询
+
+			Catalog catalog = catalogService.getCatalogById(catalogId);
+			Pageable pageable = new PageRequest(pageIndex, pageSize);
+			page = blogService.listBlogByCatalog(catalog, pageable);
+			order = "";		//这里因为order有默认值 new ，所以这里重置成空
+			
 		}else if("hot".equals(order)) {			//按最热排序，最热也就是访问量最多，评论量，点赞量来排序
 
 			Sort sort = new Sort(Direction.DESC, "readSize", "commentSize", "voteSize");
@@ -266,6 +275,11 @@ public class UserspaceController {
 	@GetMapping("/{username}/blogs/edit")
 	public ModelAndView createBolg(@PathVariable("username") String username, Model model) {
  
+		//把分类列表返回到页面
+		User user = (User)userDetailsService.loadUserByUsername(username);
+		List<Catalog> catalogs = catalogService.getCatalogsByUser(user);
+		
+		model.addAttribute("catalogs", catalogs);
 		model.addAttribute("blog", new Blog(null, null, null, null));
 		model.addAttribute("fileServerUrl", fileServerUrl);
 		
@@ -282,15 +296,32 @@ public class UserspaceController {
 	@PreAuthorize("authentication.name.equals(#username)") 
 	public ModelAndView createBolg(@PathVariable("username") String username, @PathVariable("id") Long id, Model model) {
  
+		//把分类列表返回到页面
+		User user = (User)userDetailsService.loadUserByUsername(username);
+		List<Catalog> catalogs = catalogService.getCatalogsByUser(user);
+		
+		model.addAttribute("catalogs", catalogs);
+		
 		model.addAttribute("blog", blogService.getBlogById(id));
 		model.addAttribute("fileServerUrl", fileServerUrl);
 		
 		return new ModelAndView("/userspace/blogedit", "blogModel", model);
 	}
 	
+	/**
+	 * 保存博客
+	 * @param username
+	 * @param blog
+	 * @return
+	 */
 	@PostMapping("/{username}/blogs/edit")
 	@PreAuthorize("authentication.name.equals(#username)") 
 	public ResponseEntity<Response> saveBlog(@PathVariable("username") String username, @RequestBody Blog blog){
+		
+		//对catalog进行空的判断
+		if(blog.getCatalog() == null) {
+			return ResponseEntity.ok().body(new Response(false, "未选择分类！！！")); 
+		}
 		
 		try {
 			
@@ -301,6 +332,7 @@ public class UserspaceController {
 				orinalBlog.setTitle(blog.getTitle());
 				orinalBlog.setContent(blog.getContent());
 				orinalBlog.setSummary(blog.getSummary());
+				orinalBlog.setCatalog(blog.getCatalog());  //这里要重新设置分类，因为可能改了分类
 				
 				blog = blogService.saveBlog(orinalBlog);
 			}else {

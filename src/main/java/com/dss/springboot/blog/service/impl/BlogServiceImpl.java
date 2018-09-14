@@ -1,5 +1,7 @@
 package com.dss.springboot.blog.service.impl;
 
+import java.util.List;
+
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.dss.springboot.blog.domain.Blog;
+import com.dss.springboot.blog.domain.Catalog;
 import com.dss.springboot.blog.domain.Comment;
 import com.dss.springboot.blog.domain.User;
 import com.dss.springboot.blog.domain.Vote;
@@ -109,6 +112,26 @@ public class BlogServiceImpl implements BlogService {
 		Blog blog = blogRepository.getOne(blogId);
 		blog.removeVote(voteId);
 		return this.saveBlog(blog);
+	}
+
+	@Override
+	public Page<Blog> listBlogByCatalog(Catalog catalog, Pageable pageable) {
+		return blogRepository.findByCatalog(catalog, pageable);
+	}
+
+	@Override
+	public boolean isExsitBlogByCatalogId(Long catalogId, User user) {
+		
+		Catalog catalog = new Catalog(catalogId);
+		catalog.setUser(user);
+		
+		Page<Blog> page = blogRepository.findByCatalog(catalog, null);
+		List<Blog> blogs = page.getContent();
+		if(blogs != null && blogs.size() > 0) {
+			return true;
+		}
+		
+		return false;
 	}
 
 }

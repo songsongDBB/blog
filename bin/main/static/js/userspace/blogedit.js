@@ -67,7 +67,8 @@ $("#submitBlog").click(function() {
 	    data:JSON.stringify({"id":Number($('#blogId').val()), 
 	    	"title": $('#title').val(), 
 	    	"summary": $('#summary').val() , 
-	    	"content": $('#md').val()}),
+	    	"content": $('#md').val(),
+	    	"catalog":{"id":$('#catalogSelect').val()}}),
 		beforeSend: function(request) {
 		    request.setRequestHeader(csrfHeader, csrfToken); // 添加  CSRF Token 
 		},
