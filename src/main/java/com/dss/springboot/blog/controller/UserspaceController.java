@@ -333,6 +333,7 @@ public class UserspaceController {
 				orinalBlog.setContent(blog.getContent());
 				orinalBlog.setSummary(blog.getSummary());
 				orinalBlog.setCatalog(blog.getCatalog());  //这里要重新设置分类，因为可能改了分类
+				orinalBlog.setTags(blog.getTags()); 		//这里要重新设置标签
 				
 				blog = blogService.saveBlog(orinalBlog);
 			}else {

@@ -51,7 +51,9 @@ public class BlogServiceImpl implements BlogService {
 	public Page<Blog> listBlogsByTitleVote(User user, String title, Pageable pageable) {
 
 		title = "%" + title + "%";
-		Page<Blog> blogs = blogRepository.findByUserAndTitleLikeOrderByCreateTimeDesc(user, title, pageable);
+		String tags = title;
+		Page<Blog> blogs = blogRepository.findByTitleLikeAndUserOrTagsLikeAndUserOrderByCreateTimeDesc(title, user, tags, user, pageable);
+
 		return blogs;
 	}
 

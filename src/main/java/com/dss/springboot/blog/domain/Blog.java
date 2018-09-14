@@ -77,6 +77,9 @@ public class Blog implements Serializable {
 	@Column(name = "voteSize")
 	private Long voteSize = 0L; // 点赞量
 
+	@Column(name = "tags", length = 100) // 标签
+	private String tags;
+
 	// 这里表示会建立一个中间变，博客和评论的中间表，关系是一对多
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@JoinTable(name = "blog_comment", joinColumns = @JoinColumn(name = "blog_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "comment_id", referencedColumnName = "id"))
@@ -277,12 +280,20 @@ public class Blog implements Serializable {
 		this.catalog = catalog;
 	}
 
+	public String getTags() {
+		return tags;
+	}
+
+	public void setTags(String tags) {
+		this.tags = tags;
+	}
+
 	@Override
 	public String toString() {
 		return "Blog [id=" + id + ", title=" + title + ", summary=" + summary + ", content=" + content
 				+ ", htmlContent=" + htmlContent + ", user=" + user + ", createTime=" + createTime + ", readSize="
-				+ readSize + ", commentSize=" + commentSize + ", voteSize=" + voteSize + ", comments=" + comments
-				+ ", votes=" + votes + ", catalog=" + catalog + "]";
+				+ readSize + ", commentSize=" + commentSize + ", voteSize=" + voteSize + ", tags=" + tags
+				+ ", comments=" + comments + ", votes=" + votes + ", catalog=" + catalog + "]";
 	}
 
 }
