@@ -15,26 +15,47 @@ import com.dss.springboot.blog.domain.Catalog;
 import com.dss.springboot.blog.domain.Comment;
 import com.dss.springboot.blog.domain.User;
 import com.dss.springboot.blog.domain.Vote;
+import com.dss.springboot.blog.domain.es.EsBlog;
 import com.dss.springboot.blog.repository.BlogRepository;
 import com.dss.springboot.blog.service.BlogService;
+import com.dss.springboot.blog.service.EsBlogService;
 
 @Service
 public class BlogServiceImpl implements BlogService {
 
 	@Autowired
 	private BlogRepository blogRepository;
+	@Autowired
+	private EsBlogService esBlogService;
 	
 	@Transactional
 	@Override
 	public Blog saveBlog(Blog blog) {
+		//这里不仅要把blog存入数据库，还要存入es的非关系型数据库
+		boolean isNew = true;
+		if(blog.getId() != null && blog.getId() != 0) {
+			isNew = false;
+		}
+		EsBlog esBlog = null;
+		
 		Blog returnBlog = blogRepository.save(blog);
+		if(isNew) {
+			esBlog = new EsBlog(returnBlog);
+		}else {
+			esBlog = esBlogService.getEsBlogByBlogId(blog.getId());
+			esBlog.update(returnBlog);
+		}
+		esBlogService.updateEsBlog(esBlog);
 		return returnBlog;
 	}
 
 	@Transactional
 	@Override
 	public void removeBlog(Long id) {
+		//删除博客是也需要删除es的非关系型数据库中的esblog
 		blogRepository.deleteById(id);
+		EsBlog esBlog = esBlogService.getEsBlogByBlogId(id);
+		esBlogService.removeEsBlog(esBlog.getId());
 	}
 
 	@Override

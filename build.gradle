@@ -70,6 +70,12 @@ dependencies {
 	//添加Markdown parser的依赖，这个依赖是用于编辑博客时的文本编辑器
 	compile('es.nitaur.markdown:txtmark:0.16')
 	
+	// 添加  Spring Data Elasticsearch 的依赖
+	compile('org.springframework.boot:spring-boot-starter-data-elasticsearch')
+	
+	// 添加  JNA 的依赖
+	compile('net.java.dev.jna:jna:4.3.0')
+	
 	//添加 H2 的依赖，表示在项目中内嵌一个H2的数据库，用于运行时测试
 	runtime('com.h2database:h2:1.4.193')
 }

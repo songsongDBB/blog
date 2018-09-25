@@ -1,0 +1,257 @@
+1、单例安装和head插件安装
+	1)、从Elasticsearch官网下载zip文件，解压即可
+	2)、启动Elasticsearch，找到安装目录中的bin\elasticsearch.bat，双击运行，在浏览器访问localhost:9200，显示elasticsearch基础信息，即启动成功
+	3)、head插件的下载：https://github.com/mobz/elasticsearch-head(注意，head插件的使用要求安装了node.js换件)
+	4)、下载head插件解压，cd到head目录中，执行npm install安装插件
+	5)、因为Elasticsearch是两个不同的域，要进行配置才能在head插件中实现跨域访问Elasticsearch。在Elasticsearch的目录config/elasticsearch.yml，在文件最后面加上
+			http.cors.enabled: true
+			http.cors.allow-origin: "*"
+	6)、启动head插件，npm run start，在浏览器访问localhost:9300,即可看到head插件连上Elasticsearch
+	
+2、Elasticsearch分布式安装
+	1)、需求：建立一个Elasticsearch集群，里面有三个节点，master节点为主节点，slave1和slave2是两个子节点
+	2)、配置一个master节点：打开config/elasticsearch.yml文件，配置：
+																	cluster.name: duanss		--表示集群的名字是duanss
+																	node.name: master			--表示这个节点的名字 master
+																	node.master: true			--指定这个节点为主节点master
+																	network.host: 127.0.0.1 	--绑定一个ip，端口默认9200
+	3)、复制两个新解压的Elasticsearch的文件夹，取名slave1、slave2
+			修改slave1的config/elasticsearch.yml：
+						cluster.name: duanss			--这个要与主节点一致，表名是在同一集群下
+						node.name: slave1				--节点名字
+						network.host: 127.0.0.1 		--绑定一个ip
+						http.port: 8200					--指定端口8200，因为默认是9200，与master冲突
+						discovery.zen.ping.unicast.hosts: ["127.0.0.1"] 			--给这个节点指定主节点的ip
+						
+			修改slave2的config/elasticsearch.yml：
+						cluster.name: duanss			--这个要与主节点一致，表名是在同一集群下
+						node.name: slave2				--节点名字
+						network.host: 127.0.0.1 		--绑定一个ip
+						http.port: 7200					--指定端口7200，因为默认是9200，与master冲突
+						discovery.zen.ping.unicast.hosts: ["127.0.0.1"] 			--给这个节点指定主节点的ip
+
+3、Elasticsearch基础概念
+	1)、索引：含有相同属性的文档集合(例如：可以用一个索引来代表消费者的数据，另一个索引代表产品的数据)
+	2)、类型：一个索引里面可以定义一个或多个类型，但是文档必须属于一个类型，通常会定义相同字段的文档作为一个类型
+	3)、文档：文档是可以被索引的基本数据单位(例如：一个用户的基本信息)
+		总结：索引相当于一个数据库，类型相当于一个table，文档相当于table中的一行记录
+	4)、分片：每个索引都有多个分片，每个分片都是一个Lucene索引
+	5)、备份：拷贝一份分片，就完成了分片的备份
+	
+4、Elasticsearch基本使用
+	1)、索引创建：使用head插件，直接创建索引，创建是可以指定分片数和备份数，默认是5个分片，一个备份(是每个分片一个备份)，这两个数据只能在创建索引时指定，后续不能再修改
+						查看索引的基本信息，mappings的值为空，表示是非结构化创建，反之即为结构化创建
+			Elasticsearch 有自己的RESTFul API，基本格式：http://<ip>:<port>/<索引>/<类型>/<文档id>
+				例如：
+					可以使用http的PUT方式，访问http://localhost:9200/people
+						body为json数据：
+								{
+									"settings": {
+										"number_of_shards": "3",
+										"number_of_replicas": "0"
+									},
+									"mappings": {
+										"man": {
+											"properties": {
+												"name": {
+													"type": "text"
+												},
+												"country": {
+													"type": "keyword"
+												},
+												"age": {
+													"type": "integer"
+												},
+												"date": {
+													"type": "date",
+													"format": "yyyy-MM-dd HH:ss:dd||yyyy-MM-dd"
+												}
+											}
+										},
+										"woman": {}
+									}
+								}
+						含义解释：创建一个名为people的索引，分片数为3，备份数为0；索引里有两个类型man, woman(表示有两个table：man and woman),man这个table中有字段name,country,age,date。woman没有字段
+			
+			
+	2)、数据插入：
+			指定文档id插入：
+				PUT 	http://localhost:9200/people/man/1  body:{
+																	"name": "段松松",
+																	"country": "China",
+																	"age": 25,
+																	"date": "1994-05-06"
+																 }										给man这个type插入一条文档id为1的记录
+				
+			不指定文档id，让Elasticsearch自动生成文档id
+				POST 	http://localhost:9200/people/man  body:{
+																	"name": "段松松",
+																	"country": "China",
+																	"age": 25,
+																	"date": "1994-05-06"
+																 }
+																 
+	3)、数据修改
+			直接修改文档：
+				POST 	http://localhost:9200/people/man/1/_update(_update表示是修改操作) body:{
+																									"doc": {
+																										"name": "谁是段松松"
+																									}
+																								}
+			
+			通过脚本修改文档
+				POST 	http://localhost:9200/people/man/1/_update(_update表示是修改操作) body:{
+																									"script": {
+																										"lang": "painless",
+																										"inline":  "ctx._source.name = params.name;ctx._source.age = params.age",
+																										"params": {
+																											"age": 100,
+																											"name": "段松松"
+																										}
+																									}
+																								}
+																								"lang": "painless"    --表示es内置的脚本语言
+																								"params" 			  --定义了一些参数
+																								ctx._source			  --表示当前文档的对象
+																								
+	4)、删除(没有删除类型的方法)
+			删除文档：Delete 		http://localhost:9200/people/man/1
+			删除索引：Delete 		http://localhost:9200/people
+			
+	5)、查询Elasticsearch中的数据
+			GET 	http://localhost:9200/book/novel/1		查询book索引下novel类型下的文档id是1的记录
+			POST	http://localhost:9200/book/_search		--查询book索引下的所有数据
+					http://localhost:9200/book/novel/_search		--查询book索引novel类型下的所有数据		(_search是关键字)
+															body:{
+																	"query": {
+																		"match_all": {}
+																	},
+																	"from": 1,
+																	"size": 1,
+																	"sort": [{
+																		"publish_date":  {"order": "desc"}
+																	}]
+																}		query 关键字 , from从第几条开始返回，size返回的条数
+																		match_all 表示匹配所有，当要条件查询时，使用 	"match": {							
+																																	"title": "2"
+																																}				模糊查询
+																		结果默认是升序排序 "sort": [{
+																									"publish_date":  {"order": "desc"}
+																								}]	表示通过 publish_date 字段降序排序
+																								
+			聚合查询  POST http://localhost:9200/book/novel/_search
+			
+															{
+																"aggs": {
+																	"group_by_word_count": {
+																		"terms": {
+																			"field": "word_count"
+																		}
+																	},
+																	"grades_word_count": {
+																		"stats": {
+																			"field": "word_count"
+																		}
+																	}
+																}
+															}			aggs -- 关键字 ，group_by_word_count --自定义的聚合名，terms --关键字， "field": "word_count"   --通过word_count来分组聚合查询
+																		通过多个字段和聚合，再多加 group_by_word_count 这种即可
+																		stats  -- 关键字，表示通过word_count字段计算，max、min、sum、avg、count等等，也可以吧stats直接改成函数名
+																		
+5、ElasticSearch高级查询
+	1)、query context：
+			es在查询过程中，除了判断文档是否满足查询条件外，还有计算一个_score来标识匹配的程度，表明判断目标文档和查询条件匹配的有多好
+				a)、全文本查询，针对文本类型的数据text
+					
+					POST	http://localhost:9200/book/_search		api
+							模糊匹配：{"query": {"match": {"author": "瓦力"}}}			--因为 author字段是keyword类型，所以这里要是全匹配，而不是模糊查询
+									  {"query": {"match": {"title": "ElasticSearch"}}}	title 是text文本格式，所以这里是模糊查询  返回结果有 "_score": 0.25316024, 表示匹配程度
+									  {"query": {"match": {"title": "ElasticSearch入门"}}}  这样的模糊查询，会查询title中包括ElasticSearch 或者 入门 的所有记录
+							
+							习语匹配:
+									  {"query": {"match_phrase": {"title": "ElasticSearch入门"}}}  这样会对title进行全匹配，相当于 = 符号
+							多个字段模糊匹配：
+									  {"query": {"multi_match": {"query": "瓦力", "fields": [{"author","title"}]}}}}		查询author或者title中包含 瓦力 的记录，这里相当于 author=瓦力 or tilte like 瓦力
+									  
+							query_string：通过一些语法来进行查询
+							{"query": {"query_string": {"query": "(ElasticSearch AND 大法) OR Python"}}}		查询包括（ElasticSearch并且包括 大法） 或者 （Python）的数据，这里没有指定字段，查全部字段，而且 AND 和 OR 必须大写
+									要指定查询的字段，则加上"fileds": ["author","title"]
+									
+				b)、字段级别的查询，针对结构化数据，如数字，日期，这个也可以针对keyword类型的字段	
+							{"query": {"term": {"word_count": 1000}}}		查询word_count是1000的记录
+						范围查询：{"query": {"range": {"word_count": {"gte": 1000,"lte": 2000}}}}		查询word_count在大于等于1000，小于等于2000的记录   ，当对时间字段进行筛选时，现在的时间使用 now 关键字
+						
+	2)、Filter context 过滤查询
+			这个只会返回是否查到数据，不会返回匹配的程度
+				a)、{"query": {"bool": {"filter": {"term": {"word_count": 1000}}}}}			过滤查询 word_count 为1000的记录，filter要结合bool关键字一起查询，并且会把数据进行缓存到内存
+				
+	3)、复合查询
+			a)、固定分数查询
+					{
+						"query": {
+							"constant_score": {
+								"filter": {
+									"match": {
+										"title": "ElasticSearch"
+									}
+								},
+								"boost": 2
+							}
+						}
+					}				constant_score 表示固定分数	,   "boost": 2  表示指定分数为2
+					
+			b)、bool关键字的查询
+					{
+						"query": {
+							"bool": {
+								"should": [
+									{
+										"match": {
+											"author": "瓦力"
+										}
+									},
+									{
+										"match": {
+											"title": "ElasticSearch"
+										}
+									}
+								]
+							}
+						}
+					}				这个方式使用了should关键字。表示满足这两个match之一的记录
+					{
+						"query": {
+							"bool": {
+								"must": [
+									{
+										"match": {
+											"author": "瓦力"
+										}
+									},
+									{
+										"match": {
+											"title": "ElasticSearch"
+										}
+									}
+								],
+								"filter": [{
+									"term": {
+										"word_count": 1000
+									}
+								}]
+							}
+						}
+					}			这个方式使用了must关键字。表示要同事满足这两个match的记录.			同时与filter关键字一起使用
+					{
+						"query": {
+							"bool": {
+								"must_not": {
+									"term": {
+										"author": "瓦力"
+									}
+								}
+							}
+						}
+					}		must_not关键字，表示author不是瓦力的记录
+					
+					

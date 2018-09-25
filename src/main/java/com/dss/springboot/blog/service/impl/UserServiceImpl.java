@@ -1,5 +1,8 @@
 package com.dss.springboot.blog.service.impl;
 
+import java.util.Collection;
+import java.util.List;
+
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +60,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		return userRepository.findByUsername(username);
+	}
+
+	@Override
+	public List<User> listUsersByUsernames(Collection<String> usernamelist) {
+		return userRepository.findByUsernameIn(usernamelist);
 	}
 
 }

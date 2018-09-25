@@ -15,6 +15,7 @@ import javax.persistence.OneToOne;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
 
+
 /**
  * 博客分类实体类
  * 

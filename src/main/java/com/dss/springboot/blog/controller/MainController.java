@@ -1,13 +1,8 @@
 package com.dss.springboot.blog.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-
-import com.dss.springboot.blog.domain.User;
-import com.dss.springboot.blog.service.UserService;
 
 /**
  * 主页控制器
@@ -17,9 +12,6 @@ import com.dss.springboot.blog.service.UserService;
 @Controller
 public class MainController {
 
-	@Autowired 
-	private UserService userService;
-	
 	/**
 	 * 访问根目录时，重定向到index页面
 	 * @return
@@ -35,7 +27,7 @@ public class MainController {
 	 */
 	@GetMapping("/index")
 	public String index() {
-		return "index";
+		return "redirect:/blogs";		//访问首页时，重定向到blogs请求
 	}
 	
 	/**
